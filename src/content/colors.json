@@ -1,0 +1,39 @@
+{
+  "genshin": {
+    "cryo": "#22d3ee",
+    "electro": "#7950f2",
+    "anemo": "#34d399",
+    "pyro": "#ee0000",
+    "geo": "#eab308",
+    "hydro": "#0066cc",
+    "dendro": "#4ade80",
+    "lunar-charged-electro": "linear-gradient(180deg, #5943A6 0%, #DFCEF8 45%, #FFFFFF 100%)",
+    "lunar-bloom-dendro": "linear-gradient(180deg, #B0FFB0 0%, #FFFFFF 100%)",
+    "lunar-crystallize-geo": "linear-gradient(180deg, #FCEAB8 0%, #FFFFFF 100%)",
+    "stellar-conduct-electro": "linear-gradient(180deg, #FFFFFF 0%, #9AAEF0 100%)",
+    "stellar-conduct-cryo": "linear-gradient(180deg, #FFFFFF 0%, #8EEBE7 100%)",
+    "stellar-swirl-anemo": "linear-gradient(180deg, #FFFFFF 0%, #4FE0B0 100%)",
+    "stellar-swirl-cryo": "linear-gradient(180deg, #FFFFFF 0%, #7BA5C6 100%)"
+  },
+  "sr": {
+    "physical": "linear-gradient(180deg, #6E7379 0%, #FFFFFF 100%)",
+    "fire": "linear-gradient(180deg, #C51C25 0%, #FFFFFF 100%)",
+    "ice": "linear-gradient(180deg, #196EB1 0%, #FFFFFF 100%)",
+    "lightning": "linear-gradient(180deg, #852597 0%, #FFFFFF 100%)",
+    "wind": "linear-gradient(180deg, #209C60 0%, #FFFFFF 100%)",
+    "quantum": "linear-gradient(180deg, #5D359E 0%, #FFFFFF 100%)",
+    "imaginary": "linear-gradient(180deg, #D7A621 0%, #FFFFFF 100%)"
+  },
+  "zzz": {
+    "physical": "linear-gradient(135deg, #FFE066, #FF8C00)",
+    "fire": "linear-gradient(135deg, #FFD700, #FF4500)",
+    "ice": "linear-gradient(135deg, #4DD0E1, #0097A7)",
+    "frost": "linear-gradient(135deg, #4DD0E1, #0097A7)",
+    "electric": "linear-gradient(135deg, #00E5FF, #1565C0)",
+    "wind": "linear-gradient(135deg, #A1E0FF 0%, #FFFFFF 45%, #599AFF 100%)",
+    "ether": "linear-gradient(135deg, #FF1493, #7B1FA2)",
+    "lumiflux": "linear-gradient(135deg, #F8BBD0, #C2185B)",
+    "abloom": "linear-gradient(135deg, #F0F0F0 0%, #FFFFFF 40%, #B0B0B0 100%)",
+    "disorder": "#ffffff"
+  }
+}

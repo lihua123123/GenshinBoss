@@ -1,0 +1,649 @@
+/* ============================================================
+   幽境危战 Boss 图鉴 · 深空图鉴主题
+   保留原布局（三列卡片 / 珠子串导航 / 富文本渲染），
+   视觉全面升级：深空氛围光晕 + 元素色主题 + 玻璃质感 + 精致动效。
+
+   --accent 与 --el-* 变量由 src/content/colors.json 通过 main.js 注入。
+   ============================================================ */
+
+:root {
+  --bg: #0a0e16;
+  --bg-soft: #10141f;
+  --surface: #141a28;
+  --surface-2: #1b2234;
+  --surface-3: #222b42;
+  --border: #2b3650;
+  --border-soft: #232c44;
+  --text: #f3f6fc;
+  --text-2: #d3dcec;
+  --text-3: #8b97b2;
+  --accent: #0066cc; /* 默认水元素蓝，可被 colors.json 覆盖 */
+  --current-color: #e8b84b; /* 当前游戏版本（珠子）专用金色 */
+  --radius: 14px;
+  --radius-sm: 9px;
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.28);
+  --shadow: 0 12px 32px rgba(0, 0, 0, 0.42);
+  --shadow-lg: 0 24px 56px rgba(0, 0, 0, 0.55);
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  /* 深空氛围光晕（元素色微光） */
+  --glow-top: rgba(64, 108, 240, 0.14);
+  --glow-side: rgba(122, 84, 245, 0.10);
+  --glow-bottom: rgba(0, 122, 204, 0.09);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scrollbar-gutter: stable;
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+  color: var(--text);
+  line-height: 1.8;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* 深空背景：固定光晕，不会随滚动移动 */
+  background:
+    radial-gradient(1200px 780px at 50% -12%, var(--glow-top), transparent 62%),
+    radial-gradient(960px 620px at 88% 8%, var(--glow-side), transparent 58%),
+    radial-gradient(900px 640px at 6% 96%, var(--glow-bottom), transparent 60%),
+    radial-gradient(700px 500px at 96% 88%, rgba(255, 154, 66, 0.05), transparent 60%),
+    var(--bg);
+  background-attachment: fixed;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 38%, transparent);
+  color: #fff;
+}
+
+/* 细滚动条 */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--surface-3);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ============ 顶部 ============ */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  padding: 18px 20px 14px;
+  /* 玻璃遮罩：滚动时内容柔和透过 */
+  background: linear-gradient(180deg, rgba(10, 14, 22, 0.88), rgba(10, 14, 22, 0.62) 72%, transparent);
+  backdrop-filter: blur(16px) saturate(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.header h1 {
+  position: relative;
+  width: fit-content;
+  margin: 0 auto 14px;
+  font-size: 1.28rem;
+  font-weight: 800;
+  text-align: center;
+  letter-spacing: 2px;
+  /* 渐变文字 + 光晕 */
+  background: linear-gradient(135deg, #9cc6ff 0%, #8ecbff 38%, #b7a5ff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 16px rgba(0, 102, 204, 0.35));
+}
+
+/* 当前版本徽章（data-version 由 main.js 写入） */
+.header h1::after {
+  content: attr(data-version);
+  position: absolute;
+  top: -9px;
+  right: -34px;
+  padding: 1px 9px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #1a1403;
+  background: linear-gradient(135deg, #f7d478, #e8b84b);
+  border-radius: 999px;
+  box-shadow: 0 0 12px rgba(232, 184, 75, 0.45);
+  -webkit-text-fill-color: #1a1403;
+}
+
+/* 副标语 */
+.header .tagline {
+  margin: -6px auto 12px;
+  width: fit-content;
+  font-size: 0.78rem;
+  letter-spacing: 3px;
+  color: var(--text-3);
+  text-transform: uppercase;
+}
+
+.tabs {
+  display: flex;
+  justify-content: center;
+  padding: 8px 12px 6px;
+}
+
+/* ---- 珠子串：玻璃胶囊 + 发光连接线 ---- */
+.bead-chain {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  margin: 0 auto;
+  padding: 10px 20px 12px;
+  background: rgba(20, 26, 40, 0.66);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    var(--shadow-sm);
+}
+
+.bead {
+  position: relative;
+  width: 22px;
+  height: 22px;
+  margin: 0 12px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 珠子与上一颗之间的连接线：hover 时渐变发光 */
+.bead + .bead::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: -24px;
+  width: 24px;
+  height: 2px;
+  transform: translateY(-50%);
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--border-soft), var(--border));
+  transition: background 0.25s var(--ease), box-shadow 0.25s var(--ease);
+}
+
+.bead-dot {
+  position: relative;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 32% 28%, #5a6c8a, #3a4760 70%);
+  border: 2px solid #64769a;
+  box-shadow:
+    inset 0 1px 2px rgba(255, 255, 255, 0.22),
+    0 2px 4px rgba(0, 0, 0, 0.4);
+  transition: background 0.25s var(--ease), border-color 0.25s var(--ease),
+    box-shadow 0.25s var(--ease), transform 0.25s var(--ease);
+}
+
+/* 当前游戏版本（7.0）珠子：金色渐变 */
+.bead.current-game .bead-dot {
+  background: radial-gradient(circle at 32% 28%, #ffe9ad, #e8b84b 75%);
+  border-color: #f7d478;
+}
+
+/* hover：元素色发光，轻微放大 */
+.bead:hover .bead-dot {
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent),
+    0 0 14px var(--accent);
+  transform: scale(1.12);
+}
+
+.bead:hover::before,
+.bead:hover + .bead::before {
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+}
+
+/* 选中：光晕环 */
+.bead.active .bead-dot {
+  background: radial-gradient(circle at 32% 28%, #7fb2ff, var(--accent) 78%);
+  border-color: #7fb2ff;
+  box-shadow:
+    0 0 0 4px rgba(255, 255, 255, 0.18),
+    0 0 16px var(--accent);
+  transform: scale(1.08);
+}
+
+/* 当前版本 + 选中叠加态 */
+.bead.current-game.active .bead-dot {
+  background: radial-gradient(circle at 32% 28%, #fff2c8, var(--current-color) 78%);
+  border-color: #ffe9ad;
+  box-shadow:
+    0 0 0 4px rgba(255, 255, 255, 0.2),
+    0 0 16px var(--current-color);
+}
+
+/* 珠子 tooltip：玻璃质感 */
+.bead-tip {
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  padding: 3px 10px;
+  background: rgba(27, 34, 52, 0.94);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--text);
+  font-size: 0.75rem;
+  line-height: 1.4;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s var(--ease), transform 0.18s var(--ease);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(8px);
+  z-index: 5;
+}
+
+.bead-tip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: var(--border);
+}
+
+.bead:hover .bead-tip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ============ 三列 Boss ============ */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 26px;
+  padding: 34px 26px 52px;
+  max-width: 1560px;
+  margin: 0 auto;
+  align-items: stretch;
+}
+
+/* 每个 Boss 的卡片直接参与父网格（display:contents） */
+.boss-col {
+  display: contents;
+}
+
+/* 卡片进场动画：交错上浮淡入（--order 由 main.js 写入） */
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.card {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-2) 55%, transparent), transparent 40%),
+    var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow);
+  transition: transform 0.28s var(--ease), box-shadow 0.28s var(--ease),
+    border-color 0.28s var(--ease);
+  animation: card-in 0.5s var(--ease) backwards;
+  animation-delay: calc(var(--order, 0) * 55ms);
+  position: relative;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  border-color: var(--border);
+  box-shadow: 0 20px 44px rgba(0, 0, 0, 0.55);
+}
+
+/* ---- 身份卡片（图片 + 名称 + 血量） ---- */
+.identity-card {
+  position: relative;
+  background: var(--surface);
+}
+
+/* 图片区：元素色氛围底光（作用于图片本身及背后区域） */
+.card img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+  display: block;
+  position: relative;
+  z-index: 1;
+  background:
+    radial-gradient(120% 92% at 50% 110%, color-mix(in srgb, var(--el-color, var(--accent)) 24%, transparent), transparent 62%),
+    linear-gradient(180deg, var(--surface-2), var(--surface));
+  transition: transform 0.5s var(--ease), filter 0.5s var(--ease);
+}
+
+/* hover 时图片轻微放大 + 亮度提升 */
+.identity-card:hover img {
+  transform: scale(1.045);
+  filter: brightness(1.08) saturate(1.06);
+}
+
+/* 底部信息条：深色渐变遮罩 */
+.card-body {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  padding: 30px 16px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  background: linear-gradient(180deg, transparent, rgba(8, 12, 20, 0.42) 34%, rgba(8, 12, 20, 0.92));
+}
+
+.boss-name {
+  margin: 0;
+  font-size: 1.12rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.5);
+}
+
+.hp {
+  margin: 7px 0 0;
+  color: var(--text-2);
+  font-size: 0.84rem;
+  font-variant-numeric: tabular-nums;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* HP 前置元素色小标记 */
+.hp::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--el-color, var(--accent));
+  box-shadow: 0 0 8px var(--el-color, var(--accent));
+  flex: none;
+}
+
+.img-placeholder {
+  aspect-ratio: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background:
+    radial-gradient(120% 90% at 50% 110%, color-mix(in srgb, var(--el-color, var(--accent)) 20%, transparent), transparent 60%),
+    repeating-linear-gradient(45deg, var(--surface-2), var(--surface-2) 12px, var(--surface) 12px, var(--surface) 24px);
+  text-align: center;
+  padding: 12px;
+  color: var(--text-3);
+}
+
+.img-placeholder span {
+  font-size: 1rem;
+}
+
+.img-placeholder code {
+  font-size: 0.78rem;
+  color: var(--text-3);
+  word-break: break-all;
+}
+
+.img-placeholder a {
+  color: var(--accent);
+  font-size: 0.84rem;
+  text-decoration: none;
+}
+
+.img-placeholder a:hover {
+  text-decoration: underline;
+}
+
+/* ---- 机制卡片 ---- */
+.mech {
+  padding: 22px 24px 26px;
+  position: relative;
+}
+
+.mech-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.mech p {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 0.9rem;
+  line-height: 2.05;
+  text-align: justify;
+}
+
+/* 描述段落（非机制标题）缩进，体现 > > 嵌套层级 */
+.mech p:not(.mech-name) {
+  padding-left: 16px;
+}
+
+.mech p:last-child {
+  margin-bottom: 0;
+}
+
+/* 段落开头的技能名（**…** 渲染为 <strong>）：更醒目 */
+.mech p > strong:first-child {
+  color: var(--text);
+  font-weight: 700;
+}
+
+/* 机制标题行（MD 中独立的 **名称** 行）：更明显的分级 */
+.mech p.mech-name {
+  margin: 20px 0 6px;
+  color: var(--text);
+  font-size: 0.98rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-align: left;
+}
+
+/* 首个标题（组内第一项）不需要上边距 */
+.mech p.mech-name:first-child {
+  margin-top: 2px;
+}
+
+/* 标题与紧随其后的描述衔接更紧 */
+.mech p.mech-name + p {
+  margin-top: 3px;
+}
+
+/* ============ 富文本：KaTeX / 代码强调 ============ */
+.katex-inline {
+  display: inline-flex;
+  align-items: baseline;
+  max-width: 100%;
+  overflow-x: auto;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  padding: 0.12em 0.45em;
+  margin: 0 0.12em;
+  line-height: normal;
+  white-space: nowrap;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.28);
+}
+
+.katex {
+  font-size: 1.08em;
+  line-height: normal;
+}
+
+.katex-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
+  padding: 1.2rem 1.4rem 1px;
+  margin: 1.2em 0;
+  background:
+    radial-gradient(90% 140% at 50% 120%, color-mix(in srgb, var(--el-color, var(--accent)) 10%, transparent), transparent 60%),
+    rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.katex-wrap > .katex-display {
+  margin: 0;
+}
+
+.katex-error {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0 4px;
+  color: var(--text);
+  font-family: ui-monospace, Consolas, "Courier New", monospace;
+}
+
+.mech code {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 0.08em 0.42em;
+  font-size: 0.85em;
+  font-family: ui-monospace, Consolas, "Courier New", monospace;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+/* ============ 响应式 ============ */
+@media (max-width: 1080px) {
+  .cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* 手机端 */
+@media (max-width: 720px) {
+  body {
+    background-attachment: scroll; /* 移动端禁用 fixed 背景，避免滚动闪烁 */
+  }
+
+  .header {
+    padding: 12px 12px 8px;
+    padding-top: calc(12px + env(safe-area-inset-top, 0px));
+  }
+
+  .header h1 {
+    font-size: 1.1rem;
+    letter-spacing: 1px;
+  }
+
+  .tabs {
+    justify-content: flex-start;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 6px 0 2px;
+  }
+  .tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .bead-chain {
+    justify-content: flex-start;
+    margin: 0 auto;
+    padding: 8px 10px;
+    flex-shrink: 0;
+  }
+  .bead {
+    width: 20px;
+    height: 20px;
+    margin: 0 10px;
+    flex-shrink: 0;
+  }
+  .bead + .bead::before {
+    left: -20px;
+    width: 20px;
+  }
+
+  .cards {
+    grid-template-columns: 1fr;
+    gap: 18px;
+    padding: 18px 14px 40px;
+    padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .card img {
+    aspect-ratio: 16 / 10;
+  }
+  .img-placeholder {
+    aspect-ratio: 16 / 10;
+  }
+
+  .mech {
+    padding: 18px 18px 20px;
+  }
+
+  .header h1::after {
+    right: -30px;
+  }
+}
+
+/* 减弱动画偏好 */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+}

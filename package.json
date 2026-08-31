@@ -1,0 +1,20 @@
+{
+  "name": "genshin-boss",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "原神 Boss 图鉴：从 MD 文件生成可切换版本的 HTML",
+  "scripts": {
+    "data": "node scripts/parse-md.js",
+    "build": "node scripts/parse-md.js && vite build",
+    "build:single": "node scripts/parse-md.js && vite build --config vite.single.config.js",
+    "dev": "node scripts/parse-md.js && vite"
+  },
+  "devDependencies": {
+    "vite": "^5.4.0",
+    "vite-plugin-singlefile": "^2.0.2"
+  },
+  "dependencies": {
+    "katex": "^0.16.47"
+  }
+}
