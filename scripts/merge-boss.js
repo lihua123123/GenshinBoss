@@ -20,7 +20,7 @@ for (const v of versions) {
   parts.push(text.trim());
 }
 
-const merged = parts.join('\n\n') + '\n';
+const merged = parts.join('\n\n---\n\n') + '\n';
 const outPath = path.join(contentDir, '幽境boss.md');
 fs.writeFileSync(outPath, merged, 'utf8');
 
