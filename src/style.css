@@ -385,17 +385,84 @@ body.header-open .top-trigger {
   }
 }
 
-/* ========== 敌人卡片 ========== */
+/* ========== 敌人卡片（点击翻面：正面机制 / 背面介绍+背景） ========== */
 .enemy-card {
+  position: relative;
+  perspective: 1200px;
   background: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
   box-shadow: var(--shadow-sm);
   transition: var(--transition);
   animation: card-fade-in 0.4s ease-out forwards;
+  cursor: pointer;
+}
+
+/* 3D 翻转 */
+.flip-inner {
+  position: relative;
+  display: grid;
+  width: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+}
+.enemy-card.flipped .flip-inner {
+  transform: rotateY(180deg);
+}
+
+.flip-face {
+  grid-area: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: var(--card-bg);
+}
+.flip-back {
+  transform: rotateY(180deg);
+}
+
+/* 正/背面内容区：可滚动 */
+.flip-face > .enemy-card-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.flip-face .face-body {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  padding-right: 4px;
+}
+.flip-face .face-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+/* 面标题 */
+.face-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent-light);
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+  flex: none;
+}
+
+/* 翻转提示条 */
+.flip-hint {
+  flex: none;
+  padding: 9px 10px;
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--text-tertiary);
+  border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
 }
 
 @keyframes card-fade-in {

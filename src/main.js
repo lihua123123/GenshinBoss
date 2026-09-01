@@ -99,13 +99,13 @@ function renderBlocks(lines) {
   return html;
 }
 
-// 渲染单个敌人卡片
+// 渲染单个敌人卡片（正面：机制 / 背面：介绍+背景，点击翻面）
 function createEnemyCard(boss, versionStr, index) {
   const cardStateKey = `${versionStr}-${index}`;
   
   if (!cardStates[cardStateKey]) {
     cardStates[cardStateKey] = {
-      tabIndex: 0 // 0=机制, 1=介绍
+      flipped: false // 是否翻到背面（介绍+背景）
     };
   }
   
@@ -113,9 +113,13 @@ function createEnemyCard(boss, versionStr, index) {
   const { mechanic, intro, detail } = parseEnemyContent(boss);
   
   const card = document.createElement('div');
-  card.className = 'enemy-card';
+  card.className = 'enemy-card' + (state.flipped ? ' flipped' : '');
   card.setAttribute('data-version', versionStr);
   card.setAttribute('data-index', index);
+  card.setAttribute('role', 'button');
+  card.setAttribute('aria-label', `查看${boss.fullName || boss.shortName}的介绍与背景`);
+  card.setAttribute('aria-expanded', String(state.flipped));
+  card.setAttribute('tabindex', '0');
   
   // 图片路径修复
   let imgHtml;
@@ -128,71 +132,78 @@ function createEnemyCard(boss, versionStr, index) {
       </div>
     `;
   } else {
-    // 修复路径：直接使用文件名（文件在 dist 根目录）
     const imgPath = escapeHtml(boss.imgLocal);
     imgHtml = `<img src="${imgPath}" alt="${escapeHtml(boss.fullName || boss.shortName)}" loading="lazy" />`;
   }
   
   card.innerHTML = `
-    <div class="enemy-image-container">
-      ${imgHtml}
-    </div>
-    <div class="enemy-card-content">
-      <div class="enemy-header">
-        <h2 class="enemy-name">${escapeHtml(boss.fullName || boss.shortName)}</h2>
-        <p class="enemy-hp">${escapeHtml(boss.hp)}</p>
-      </div>
-      
-      <!-- 标签页切换 -->
-      <div class="tabs-container">
-        <button class="tab-btn ${state.tabIndex === 0 ? 'active' : ''}" data-tab="0">机制</button>
-        <button class="tab-btn ${state.tabIndex === 1 ? 'active' : ''}" data-tab="1">介绍</button>
-      </div>
-      
-      <!-- 机制标签页 -->
-      <div class="tab-content ${state.tabIndex === 0 ? 'active' : ''}" data-tab="0">
-        ${renderBlocks(mechanic)}
-      </div>
-      
-      <!-- 介绍标签页（含可折叠背景） -->
-      <div class="tab-content ${state.tabIndex === 1 ? 'active' : ''}" data-tab="1">
-        ${intro.length ? renderBlocks(intro) : ''}
-        ${detail.length ? `
-          <div class="background-section">
-            <button class="background-toggle" aria-expanded="false">
-              <span>背景</span>
-              <span class="bg-arrow">▾</span>
-            </button>
-            <div class="background-content">
-              ${renderBlocks(detail)}
-            </div>
+    <div class="flip-inner">
+      <!-- 正面：机制 -->
+      <div class="flip-face flip-front">
+        <div class="enemy-image-container">
+          ${imgHtml}
+        </div>
+        <div class="enemy-card-content">
+          <div class="enemy-header">
+            <h2 class="enemy-name">${escapeHtml(boss.fullName || boss.shortName)}</h2>
+            <p class="enemy-hp">${escapeHtml(boss.hp)}</p>
           </div>
-        ` : ''}
+          <div class="face-title">机制</div>
+          <div class="face-body">
+            ${renderBlocks(mechanic)}
+          </div>
+        </div>
+        <div class="flip-hint">点击翻面 · 查看介绍与背景</div>
+      </div>
+      
+      <!-- 背面：介绍 + 背景 -->
+      <div class="flip-face flip-back">
+        <div class="enemy-card-content">
+          <div class="enemy-header">
+            <h2 class="enemy-name">${escapeHtml(boss.shortName || boss.fullName)}</h2>
+            <p class="enemy-hp">${escapeHtml(boss.hp)}</p>
+          </div>
+          <div class="face-title">介绍</div>
+          <div class="face-body">
+            ${intro.length ? renderBlocks(intro) : ''}
+            ${detail.length ? `
+              <div class="background-section">
+                <button class="background-toggle" aria-expanded="false">
+                  <span>背景</span>
+                  <span class="bg-arrow">▾</span>
+                </button>
+                <div class="background-content">
+                  ${renderBlocks(detail)}
+                </div>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+        <div class="flip-hint">点击返回 · 查看机制</div>
       </div>
     </div>
   `;
   
-  // 标签页切换事件
-  const tabBtns = card.querySelectorAll('.tab-btn');
-  tabBtns.forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const tabIndex = parseInt(btn.dataset.tab);
-      state.tabIndex = tabIndex;
-      
-      tabBtns.forEach((b) => b.classList.remove('active'));
-      btn.classList.add('active');
-      
-      card.querySelectorAll('.tab-content').forEach((content) => {
-        content.classList.remove('active');
-      });
-      card.querySelector(`.tab-content[data-tab="${tabIndex}"]`).classList.add('active');
-    });
+  // 点击卡片翻面
+  const flipCard = () => {
+    state.flipped = !state.flipped;
+    card.classList.toggle('flipped', state.flipped);
+    card.setAttribute('aria-expanded', String(state.flipped));
+  };
+  card.addEventListener('click', flipCard);
+  // 键盘支持：Enter / 空格触发翻面
+  card.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      flipCard();
+    }
   });
   
-  // 背景折叠切换
+  // 背景折叠（阻止冒泡，避免触发翻面）
   const bgToggle = card.querySelector('.background-toggle');
   if (bgToggle) {
-    bgToggle.addEventListener('click', () => {
+    bgToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
       const isOpen = bgToggle.getAttribute('aria-expanded') === 'true';
       const next = !isOpen;
       bgToggle.setAttribute('aria-expanded', String(next));
