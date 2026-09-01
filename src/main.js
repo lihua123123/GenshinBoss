@@ -2,81 +2,22 @@ import data from './data/bosses.json';
 import colors from './content/colors.json';
 import { renderRichText } from './renderer.js';
 
-const tabsEl = document.getElementById('version-tabs');
-const cardsEl = document.getElementById('boss-cards');
+// DOM 元素引用
+const versionTabsEl = document.getElementById('version-tabs');
+const enemyGridEl = document.getElementById('enemy-grid');
 
-// ---- 从 colors.json 注入主题与元素颜色（改 colors.json 后重新 build 即可） ----
+// ---- 配置 ----
 const GENSIN = colors.genshin || {};
 const ELEMENT_ORDER = ['pyro', 'hydro', 'electro', 'cryo', 'anemo', 'geo', 'dendro'];
-const root = document.documentElement;
-// 全局强调色：可改下面的引用，例如换成 'pyro' / 'cryo' 等
-root.style.setProperty('--accent', GENSIN.hydro || '#0066cc');
-ELEMENT_ORDER.forEach((name) => {
-  if (GENSIN[name]) root.style.setProperty(`--el-${name}`, GENSIN[name]);
-});
+const CURRENT_GAME_VERSION = '5.7';
 
-// 当前游戏版本：珠子串中会用特殊颜色标识，并作为默认打开时跳转的版本
-const CURRENT_GAME_VERSION = '7.0';
-
-// 默认打开时自动跳转到当前设置的版本号
+// 默认版本
 let currentVersion = CURRENT_GAME_VERSION;
 
-function renderTabs() {
-  tabsEl.innerHTML = '';
-  const chain = document.createElement('div');
-  chain.className = 'bead-chain';
-  chain.setAttribute('role', 'tablist');
+// 卡片状态管理
+const cardStates = {};
 
-  data.forEach((v) => {
-    const isActive = v.version === currentVersion;
-    const isCurrentGame = v.version === CURRENT_GAME_VERSION;
-
-    const btn = document.createElement('button');
-    btn.className =
-      'bead' +
-      (isActive ? ' active' : '') +
-      (isCurrentGame ? ' current-game' : '');
-    btn.setAttribute('role', 'tab');
-    btn.setAttribute('aria-selected', String(isActive));
-    btn.title = v.version;
-    btn.innerHTML = `<span class="bead-dot"></span><span class="bead-tip">${escapeHtml(v.version)}</span>`;
-    btn.addEventListener('click', () => {
-      currentVersion = v.version;
-      renderTabs();
-      renderCards();
-    });
-    chain.appendChild(btn);
-  });
-
-  tabsEl.appendChild(chain);
-}
-
-function splitSkillGroups(skills) {
-  // 将两组机制（用空引用行 __SEP__ 分隔）拆成两个列表
-  const groups = [[]];
-  for (const s of skills) {
-    if (s === '__SEP__') {
-      groups.push([]);
-    } else if (s) {
-      groups[groups.length - 1].push(s);
-    }
-  }
-  return groups.filter((g) => g.length > 0);
-}
-
-function paraHtml(items) {
-  if (!items || items.length === 0) return '';
-  let html = '<div class="mech-list">';
-  items.forEach((item) => {
-    // 技能文本经富文本渲染：支持 <span class> 颜色、$…$ 行内数学、`…` 代码强调
-    // 纯加粗名称行（**名称**）渲染为机制标题
-    const isNameLine = /^\*\*[^*]+\*\*$/.test(item.trim());
-    html += `<p${isNameLine ? ' class="mech-name"' : ''}>${renderRichText(item)}</p>`;
-  });
-  html += '</div>';
-  return html;
-}
-
+// 工具函数：转义 HTML
 function escapeHtml(str) {
   return str
     .replace(/&/g, '&amp;')
@@ -85,98 +26,241 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
-// 读取当前生效的列数（与 CSS 断点保持一致，避免 JS 与样式不同步）
-function getColumnCount() {
-  const count = getComputedStyle(cardsEl).gridTemplateColumns.split(' ').length;
-  return count >= 1 ? count : 3;
+// 渲染珠子串版本导航
+function renderVersionTabs() {
+  versionTabsEl.innerHTML = '';
+  const chain = document.createElement('div');
+  chain.className = 'bead-chain';
+  chain.setAttribute('role', 'tablist');
+
+  data.forEach((versionData) => {
+    const isActive = versionData.version === currentVersion;
+
+    const btn = document.createElement('button');
+    btn.className = 'bead' + (isActive ? ' active' : '');
+    btn.setAttribute('role', 'tab');
+    btn.setAttribute('aria-selected', String(isActive));
+    btn.title = versionData.version;
+    btn.innerHTML = `<span class="bead-dot"></span><span class="bead-tip">${escapeHtml(versionData.version)}</span>`;
+    
+    btn.addEventListener('click', () => {
+      currentVersion = versionData.version;
+      renderVersionTabs();
+      renderEnemyCards();
+    });
+    
+    chain.appendChild(btn);
+  });
+
+  versionTabsEl.appendChild(chain);
 }
 
-function renderCards() {
-  const version = data.find((v) => v.version === currentVersion);
-  if (!version) return;
+// 解析敌人技能数据
+function parseEnemyContent(boss) {
+  if (!boss.skills || boss.skills.length === 0) {
+    return { mechanic: [], intro: [], detail: [] };
+  }
+  
+  const skillText = boss.skills.join('\n');
+  const parts = skillText.split('__SEP__').map(s => s.trim());
+  
+  // 每个部分都按行拆分为数组（对应每个 > 引用块）
+  const toLines = (str) => (str ? str.split('\n').map(s => s.trim()).filter(Boolean) : []);
+  
+  return {
+    mechanic: toLines(parts[0]),
+    intro: toLines(parts[1]),
+    detail: toLines(parts[2])
+  };
+}
 
-  // 版本徽章（标题右上角小标签）
-  const titleEl = document.getElementById('page-title');
-  if (titleEl) titleEl.dataset.version = currentVersion;
-
-  cardsEl.innerHTML = '';
-  // 卡片交错进场动画计数器
-  let order = 0;
-
-  const cols = getColumnCount();
-  // 记录每一列已用到的行号指针，实现「逐 Boss 分列」的列主序布局
-  const colRows = new Array(cols).fill(1);
-
-  version.bosses.forEach((boss, idx) => {
-    const elName = ELEMENT_ORDER[idx % ELEMENT_ORDER.length];
-    const elColor = GENSIN[elName] || '#0066cc';
-    const groups = splitSkillGroups(boss.skills);
-
-    // 每个 Boss 是一列（boss-col 用 display:contents，卡片直接参与父网格）
-    const col = document.createElement('div');
-    col.className = 'boss-col';
-    col.style.setProperty('--el-color', elColor);
-
-    // 图片：缺失时显示占位框
-    let imgHtml;
-    if (boss.imgMissing) {
-      imgHtml = `
-        <div class="img-placeholder">
-          <span>🖼️ 待手动补充图片</span>
-          <code>images/${escapeHtml(boss.imgLocal || '')}</code>
-          <a href="${escapeHtml(boss.imgUrl)}" target="_blank" rel="noopener">原始链接</a>
-        </div>`;
+// 通用板块化渲染：每个 > 引用块独立成小板块，标题行（**X**）单独高亮
+function renderBlocks(lines) {
+  if (!lines || lines.length === 0) return '<p class="empty-hint">暂无数据</p>';
+  
+  let html = '<div class="block-list">';
+  
+  lines.forEach((line) => {
+    if (!line.trim()) return;
+    
+    // 标题行（纯加粗，如 **唤雷·坚盾** 或 **【模式】**）
+    const isTitleLine = /^\*\*[^*]+\*\*$/.test(line.trim());
+    
+    if (isTitleLine) {
+      const titleText = line.replace(/\*\*/g, '');
+      html += `<div class="block block-title"><span class="block-title-mark"></span>${escapeHtml(titleText)}</div>`;
     } else {
-      const imgPath = `/${encodeURI(boss.imgLocal)}`;
-      imgHtml = `<img src="${imgPath}" alt="${escapeHtml(boss.fullName)}" loading="lazy" />`;
+      // 普通描述行：独立小板块
+      html += `<div class="block block-text">${renderRichText(line)}</div>`;
     }
+  });
+  
+  html += '</div>';
+  return html;
+}
 
-    // 当前列：按列数循环分配（3/2/1 列），行号从该列当前指针继续，实现列主序分列
-    const column = (idx % cols) + 1;
-    let row = colRows[column - 1];
-
-    // 卡片 1：图片 + 居中 Boss 名称 + 血量（第一行，弹性拉伸补齐列高）
-    const identityCard = document.createElement('div');
-    identityCard.className = 'card identity-card';
-    identityCard.style.gridColumn = String(column);
-    identityCard.style.gridRow = String(row);
-    identityCard.style.setProperty('--order', String(order++));
-    identityCard.innerHTML = `
-      ${imgHtml}
-      <div class="card-body">
-        <h2 class="boss-name">${escapeHtml(boss.fullName || boss.shortName)}</h2>
-        <p class="hp">${escapeHtml(boss.hp)}</p>
+// 渲染单个敌人卡片
+function createEnemyCard(boss, versionStr, index) {
+  const cardStateKey = `${versionStr}-${index}`;
+  
+  if (!cardStates[cardStateKey]) {
+    cardStates[cardStateKey] = {
+      tabIndex: 0 // 0=机制, 1=介绍
+    };
+  }
+  
+  const state = cardStates[cardStateKey];
+  const { mechanic, intro, detail } = parseEnemyContent(boss);
+  
+  const card = document.createElement('div');
+  card.className = 'enemy-card';
+  card.setAttribute('data-version', versionStr);
+  card.setAttribute('data-index', index);
+  
+  // 图片路径修复
+  let imgHtml;
+  if (boss.imgMissing) {
+    imgHtml = `
+      <div class="image-placeholder">
+        <div>🖼️ 图片待补充</div>
+        <code>${escapeHtml(boss.imgLocal || '')}</code>
+        <a href="${escapeHtml(boss.imgUrl)}" target="_blank" rel="noopener">获取链接</a>
       </div>
     `;
-    col.appendChild(identityCard);
-    row += 1;
-
-    // 机制卡片：每个分组一张卡片，自动按行排列（增删分组会自动增减卡片）
-    groups.forEach((group) => {
-      if (!group || !group.length) return;
-      const mech = document.createElement('div');
-      mech.className = 'card mech';
-      mech.style.gridColumn = String(column);
-      mech.style.gridRow = String(row);
-      mech.style.setProperty('--order', String(order++));
-      mech.innerHTML = paraHtml(group);
-      col.appendChild(mech);
-      row += 1;
+  } else {
+    // 修复路径：直接使用文件名（文件在 dist 根目录）
+    const imgPath = escapeHtml(boss.imgLocal);
+    imgHtml = `<img src="${imgPath}" alt="${escapeHtml(boss.fullName || boss.shortName)}" loading="lazy" />`;
+  }
+  
+  card.innerHTML = `
+    <div class="enemy-image-container">
+      ${imgHtml}
+    </div>
+    <div class="enemy-card-content">
+      <div class="enemy-header">
+        <h2 class="enemy-name">${escapeHtml(boss.fullName || boss.shortName)}</h2>
+        <p class="enemy-hp">${escapeHtml(boss.hp)}</p>
+      </div>
+      
+      <!-- 标签页切换 -->
+      <div class="tabs-container">
+        <button class="tab-btn ${state.tabIndex === 0 ? 'active' : ''}" data-tab="0">机制</button>
+        <button class="tab-btn ${state.tabIndex === 1 ? 'active' : ''}" data-tab="1">介绍</button>
+      </div>
+      
+      <!-- 机制标签页 -->
+      <div class="tab-content ${state.tabIndex === 0 ? 'active' : ''}" data-tab="0">
+        ${renderBlocks(mechanic)}
+      </div>
+      
+      <!-- 介绍标签页（含可折叠背景） -->
+      <div class="tab-content ${state.tabIndex === 1 ? 'active' : ''}" data-tab="1">
+        ${intro.length ? renderBlocks(intro) : ''}
+        ${detail.length ? `
+          <div class="background-section">
+            <button class="background-toggle" aria-expanded="false">
+              <span>背景</span>
+              <span class="bg-arrow">▾</span>
+            </button>
+            <div class="background-content">
+              ${renderBlocks(detail)}
+            </div>
+          </div>
+        ` : ''}
+      </div>
+    </div>
+  `;
+  
+  // 标签页切换事件
+  const tabBtns = card.querySelectorAll('.tab-btn');
+  tabBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const tabIndex = parseInt(btn.dataset.tab);
+      state.tabIndex = tabIndex;
+      
+      tabBtns.forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      
+      card.querySelectorAll('.tab-content').forEach((content) => {
+        content.classList.remove('active');
+      });
+      card.querySelector(`.tab-content[data-tab="${tabIndex}"]`).classList.add('active');
     });
+  });
+  
+  // 背景折叠切换
+  const bgToggle = card.querySelector('.background-toggle');
+  if (bgToggle) {
+    bgToggle.addEventListener('click', () => {
+      const isOpen = bgToggle.getAttribute('aria-expanded') === 'true';
+      const next = !isOpen;
+      bgToggle.setAttribute('aria-expanded', String(next));
+      bgToggle.classList.toggle('open', next);
+      card.querySelector('.background-content').classList.toggle('open', next);
+    });
+  }
+  
+  return card;
+}
 
-    // 记录该列已用到的行号，供后续分配到同一列的 Boss 使用
-    colRows[column - 1] = row;
-
-    cardsEl.appendChild(col);
+// 渲染敌人卡片
+function renderEnemyCards() {
+  enemyGridEl.innerHTML = '';
+  
+  const versionData = data.find((v) => v.version === currentVersion);
+  if (!versionData || !versionData.bosses || versionData.bosses.length === 0) {
+    enemyGridEl.innerHTML = '<div class="empty-state"><p>该版本暂无数据</p></div>';
+    return;
+  }
+  
+  versionData.bosses.forEach((boss, index) => {
+    const card = createEnemyCard(boss, versionData.version, index);
+    enemyGridEl.appendChild(card);
   });
 }
 
-renderTabs();
-renderCards();
+// 初始化
+renderVersionTabs();
+renderEnemyCards();
 
-// 窗口尺寸变化（跨过断点导致列数改变）时重新布局
-let resizeTimer;
-window.addEventListener('resize', () => {
-  clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(renderCards, 120);
-});
+// ===== 顶部悬浮标题栏：鼠标移到顶部自动弹出（带回弹动画） =====
+const headerEl = document.querySelector('.header');
+const topTriggerEl = document.querySelector('.top-trigger');
+let hideTimer = null;
+
+function showHeader() {
+  if (!headerEl) return;
+  clearTimeout(hideTimer);
+  headerEl.classList.add('show');
+  document.body.classList.add('header-open');
+}
+
+function hideHeader() {
+  if (!headerEl) return;
+  clearTimeout(hideTimer);
+  hideTimer = setTimeout(() => {
+    headerEl.classList.remove('show');
+    document.body.classList.remove('header-open');
+  }, 300);
+}
+
+if (headerEl) {
+  // 鼠标进入顶部感应条或悬浮栏区域 -> 弹出
+  topTriggerEl && topTriggerEl.addEventListener('mouseenter', showHeader);
+  headerEl.addEventListener('mouseenter', showHeader);
+  // 鼠标移出悬浮栏 -> 收起
+  headerEl.addEventListener('mouseleave', hideHeader);
+  // 鼠标移到页面顶部（触发条区域外的小阈值）也弹出
+  document.addEventListener('mousemove', (e) => {
+    if (e.clientY < 12) showHeader();
+  });
+  // 触摸设备：点击触发条展开/收起
+  topTriggerEl && topTriggerEl.addEventListener('click', () => {
+    if (headerEl.classList.contains('show')) {
+      hideHeader();
+    } else {
+      showHeader();
+    }
+  });
+}
