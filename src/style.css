@@ -391,7 +391,7 @@ body.header-open .top-trigger {
   perspective: 1200px;
   background: var(--card-bg);
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
   box-shadow: var(--shadow-sm);
   transition: var(--transition);
   animation: card-fade-in 0.4s ease-out forwards;
@@ -417,7 +417,7 @@ body.header-open .top-trigger {
   min-width: 0;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
-  border-radius: var(--radius-lg);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
   background: var(--card-bg);
 }
 .flip-back {
