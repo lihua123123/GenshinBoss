@@ -417,7 +417,6 @@ body.header-open .top-trigger {
   min-width: 0;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
-  overflow: hidden;
   border-radius: var(--radius-lg);
   background: var(--card-bg);
 }
@@ -425,7 +424,7 @@ body.header-open .top-trigger {
   transform: rotateY(180deg);
 }
 
-/* 正/背面内容区：可滚动 */
+/* 正/背面内容区：内容自然增长，卡片高度 = max(正,背面完整内容) */
 .flip-face > .enemy-card-content {
   flex: 1;
   display: flex;
@@ -434,12 +433,9 @@ body.header-open .top-trigger {
 }
 .flip-face .face-body {
   flex: 1;
-  overflow-y: auto;
   min-height: 0;
   padding-right: 4px;
-}
-.flip-face .face-body::-webkit-scrollbar {
-  width: 6px;
+  padding-bottom: 14px;
 }
 
 /* 面标题 */
@@ -454,15 +450,37 @@ body.header-open .top-trigger {
   flex: none;
 }
 
-/* 翻转提示条 */
+/* 翻转提示条：固定在卡片容器底部（相对 .enemy-card），跟随卡片高度变化 */
 .flip-hint {
-  flex: none;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 5;
   padding: 9px 10px;
   text-align: center;
   font-size: 0.72rem;
   color: var(--text-tertiary);
   border-top: 1px solid var(--border);
-  background: color-mix(in srgb, var(--accent) 6%, transparent);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  background: rgba(16, 20, 31, 0.94);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* 正/背面提示文字切换 */
+.flip-hint .hint-back {
+  display: none;
+}
+.enemy-card.flipped .flip-hint .hint-front {
+  display: none;
+}
+.enemy-card.flipped .flip-hint .hint-back {
+  display: inline;
+}
+/* 面底部内容区为提示条留出空间 */
+.flip-face .enemy-card-content {
+  padding-bottom: 44px;
 }
 
 @keyframes card-fade-in {
@@ -718,11 +736,9 @@ body.header-open .top-trigger {
   max-height: 0;
   overflow: hidden;
   opacity: 0;
-  transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+  transition: max-height 0.35s ease-out, opacity 0.35s ease-out;
 }
-
 .background-content.open {
-  max-height: 2000px;
   opacity: 1;
   margin-top: 10px;
 }

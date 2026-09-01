@@ -153,7 +153,6 @@ function createEnemyCard(boss, versionStr, index) {
             ${renderBlocks(mechanic)}
           </div>
         </div>
-        <div class="flip-hint">点击翻面 · 查看介绍与背景</div>
       </div>
       
       <!-- 背面：介绍 + 背景 -->
@@ -179,8 +178,12 @@ function createEnemyCard(boss, versionStr, index) {
             ` : ''}
           </div>
         </div>
-        <div class="flip-hint">点击返回 · 查看机制</div>
       </div>
+    </div>
+    <!-- 底部提示条：固定在卡片容器底部，跟随卡片高度变化 -->
+    <div class="flip-hint">
+      <span class="hint-front">点击翻面 · 查看介绍与背景</span>
+      <span class="hint-back">点击返回 · 查看机制</span>
     </div>
   `;
   
@@ -199,16 +202,29 @@ function createEnemyCard(boss, versionStr, index) {
     }
   });
   
-  // 背景折叠（阻止冒泡，避免触发翻面）
+  // 背景折叠（阻止冒泡，避免触发翻面；JS 精确控制 max-height 保证展开到内容完整高度）
   const bgToggle = card.querySelector('.background-toggle');
   if (bgToggle) {
+    const bgContent = card.querySelector('.background-content');
     bgToggle.addEventListener('click', (e) => {
       e.stopPropagation();
       const isOpen = bgToggle.getAttribute('aria-expanded') === 'true';
-      const next = !isOpen;
-      bgToggle.setAttribute('aria-expanded', String(next));
-      bgToggle.classList.toggle('open', next);
-      card.querySelector('.background-content').classList.toggle('open', next);
+      if (!isOpen) {
+        // 展开：设置 max-height 为内容的实际完整高度，卡片随背景自然变长
+        bgContent.style.maxHeight = bgContent.scrollHeight + 'px';
+        bgToggle.setAttribute('aria-expanded', 'true');
+        bgToggle.classList.add('open');
+        bgContent.classList.add('open');
+      } else {
+        // 收回：先固定当前高度再动画到 0，避免过渡跳动
+        bgContent.style.maxHeight = bgContent.scrollHeight + 'px';
+        requestAnimationFrame(() => {
+          bgContent.style.maxHeight = '0px';
+        });
+        bgToggle.setAttribute('aria-expanded', 'false');
+        bgToggle.classList.remove('open');
+        setTimeout(() => bgContent.classList.remove('open'), 400);
+      }
     });
   }
   
