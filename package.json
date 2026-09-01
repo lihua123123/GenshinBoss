@@ -8,11 +8,14 @@
     "data": "node scripts/parse-md.js",
     "build": "node scripts/parse-md.js && vite build",
     "build:single": "node scripts/parse-md.js && vite build --config vite.single.config.js",
-    "dev": "node scripts/parse-md.js && vite"
+    "dev": "node scripts/parse-md.js && vite",
+    "deploy": "npm run build && wrangler deploy",
+    "deploy:preview": "npm run build && wrangler dev"
   },
   "devDependencies": {
     "vite": "^5.4.0",
-    "vite-plugin-singlefile": "^2.0.2"
+    "vite-plugin-singlefile": "^2.0.2",
+    "wrangler": "^4.110.0"
   },
   "dependencies": {
     "katex": "^0.16.47"
